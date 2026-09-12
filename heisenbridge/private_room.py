@@ -7,6 +7,7 @@ import unicodedata
 from datetime import datetime
 from datetime import timezone
 from html import escape
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -55,7 +56,9 @@ def connected(f):
     return wrapper
 
 
-def parse_irc_formatting(input: str, pills=None, color=None) -> Tuple[str, Optional[str], List[str]]:
+def parse_irc_formatting(
+    input: str, pills: Optional[Dict[str, Tuple[str, str, bool]]] = None, color=None
+) -> Tuple[str, Optional[str], List[str]]:
     plain = []
     formatted = []
     mentions = []
@@ -273,8 +276,9 @@ def parse_irc_formatting(input: str, pills=None, color=None) -> Tuple[str, Optio
                     word_end = word[wlen:]
 
                     if word_start in pills:
-                        mxid, displayname = pills[word_start]
-                        mentions.append(mxid)
+                        mxid, displayname, mentionable = pills[word_start]
+                        if mentionable:
+                            mentions.append(mxid)
                         words.append(
                             f'<a href="https://matrix.to/#/{escape(mxid)}">{escape(displayname)}</a>{word_end}'
                         )
@@ -574,7 +578,7 @@ class PrivateRoom(Room):
         # push our own name first
         lnick = self.network.conn.real_nickname.lower()
         if self.user_id in self.displaynames and len(lnick) >= self.network.pills_length and lnick not in ignore:
-            ret[lnick] = (self.user_id, self.displaynames[self.user_id])
+            ret[lnick] = (self.user_id, self.displaynames[self.user_id], True)
 
         # assuming displayname of a puppet matches nick
         for member in self.members:
@@ -585,7 +589,7 @@ class PrivateRoom(Room):
                 nick = self.displaynames[member]
                 lnick = nick.lower()
                 if len(nick) >= self.network.pills_length and lnick not in ignore:
-                    ret[lnick] = (member, nick)
+                    ret[lnick] = (member, nick, False)
 
         return ret
 
