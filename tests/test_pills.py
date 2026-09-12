@@ -8,11 +8,11 @@ def test_pills():
 
     def fmt(input):
         pills = {
-            "foo": ("foo", "foo", True),
-            "fo0": ("Fo0", "Fo0", True),
-            "^foo^": ("^foo^", "^foo^", True),
-            "[foo]": ("[foo]", "[foo]", True),
-            "{foo}": ("{foo}", "{foo}", True),
+            "foo": ("foo", "foo", True, True),
+            "fo0": ("Fo0", "Fo0", True, True),
+            "^foo^": ("^foo^", "^foo^", True, True),
+            "[foo]": ("[foo]", "[foo]", True, True),
+            "{foo}": ("{foo}", "{foo}", True, True),
         }
 
         plain, formatted, _ = parse_irc_formatting(input, pills)

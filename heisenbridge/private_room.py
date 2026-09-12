@@ -57,7 +57,7 @@ def connected(f):
 
 
 def parse_irc_formatting(
-    input: str, pills: Optional[Dict[str, Tuple[str, str, bool]]] = None, color=None
+    input: str, pills: Optional[Dict[str, Tuple[str, str, bool, bool]]] = None, color=None
 ) -> Tuple[str, Optional[str], List[str]]:
     plain = []
     formatted = []
@@ -276,12 +276,15 @@ def parse_irc_formatting(
                     word_end = word[wlen:]
 
                     if word_start in pills:
-                        mxid, displayname, mentionable = pills[word_start]
+                        mxid, displayname, display_pill, mentionable = pills[word_start]
                         if mentionable:
                             mentions.append(mxid)
-                        words.append(
-                            f'<a href="https://matrix.to/#/{escape(mxid)}">{escape(displayname)}</a>{word_end}'
-                        )
+                        if display_pill:
+                            words.append(
+                                f'<a href="https://matrix.to/#/{escape(mxid)}">{escape(displayname)}</a>{word_end}'
+                            )
+                        else:
+                            words.append(word)
                     else:
                         words.append(word)
 
@@ -567,29 +570,53 @@ class PrivateRoom(Room):
         else:
             super().send_notice_html(text=text, user_id=user_id)
 
-    def pills(self):
-        # if pills are disabled, don't generate any
-        if self.network.pills_length < 1:
-            return None
+    def pills(self) -> Dict[str, Tuple[str, str, bool, bool]]:
+        # Returns a dict of tuples key'ed by lower-cased nick.
+        # The tuple contains:
+        #     matrix user_id [str]
+        #     display name [str]
+        #     display pill [bool]
+        #     add intentional mention [bool]
+        #
+        # Pills drive mentions as well now, so we should always populate pills
+        # at least for our nick even if they are disabled. Mention notifications
+        # can and should be controlled from a user's account settings, not by
+        # heisenbridge.
 
         ret = {}
         ignore = list(map(lambda x: x.lower(), self.network.pills_ignore))
+        pills_enabled = self.network.pills_length > 0
 
-        # push our own name first
-        lnick = self.network.conn.real_nickname.lower()
-        if self.user_id in self.displaynames and len(lnick) >= self.network.pills_length and lnick not in ignore:
-            ret[lnick] = (self.user_id, self.displaynames[self.user_id], True)
+        def should_display_pill(lnick: str) -> bool:
+            # pass lower-cased nick
+            nick_long_enough = len(lnick) >= self.network.pills_length
+            nick_not_ignored = lnick not in ignore
+            return pills_enabled and nick_long_enough and nick_not_ignored
 
+        # puppets first so our own name wins over our own puppet if it has a
+        # similar name and has been pulled into the room
+        #
         # assuming displayname of a puppet matches nick
-        for member in self.members:
-            if not member.startswith("@" + self.serv.puppet_prefix) or not member.endswith(":" + self.serv.server_name):
-                continue
+        if pills_enabled:
+            # no reason to iterate over every member if pills are disabled
+            for member in self.members:
+                if not member.startswith("@" + self.serv.puppet_prefix) or not member.endswith(
+                    ":" + self.serv.server_name
+                ):
+                    continue
 
-            if member in self.displaynames:
-                nick = self.displaynames[member]
-                lnick = nick.lower()
-                if len(nick) >= self.network.pills_length and lnick not in ignore:
-                    ret[lnick] = (member, nick, False)
+                if member in self.displaynames:
+                    nick = self.displaynames[member]
+                    lnick = nick.lower()
+                    if should_display_pill(lnick):
+                        # there's never a reason for a puppet to be in the intentional mentions
+                        ret[lnick] = (member, nick, True, False)
+
+        # our own nick should always be mentioned, but there are reasons it might not get a pill
+        nick = self.network.conn.real_nickname
+        lnick = nick.lower()
+        display_name = self.displaynames.get(self.user_id, nick)
+        ret[lnick] = (self.user_id, display_name, should_display_pill(lnick), True)
 
         return ret
 
