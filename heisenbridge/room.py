@@ -316,7 +316,13 @@ class Room(ABC):
         self._queue.enqueue(event)
 
     # send emote to mx user (may be puppeted)
-    def send_emote(self, text: str, user_id: Optional[str] = None, fallback_html: Optional[str] = None) -> None:
+    def send_emote(
+        self,
+        text: str,
+        user_id: Optional[str] = None,
+        fallback_html: Optional[str] = None,
+        mentions: Optional[List[str]] = None,
+    ) -> None:
         event = {
             "type": "m.room.message",
             "content": {
@@ -326,6 +332,11 @@ class Room(ABC):
             "user_id": user_id,
             "fallback_html": fallback_html,
         }
+
+        if mentions is not None and len(mentions) > 0:
+            event["content"]["m.mentions"] = {
+                "user_ids": mentions,
+            }
 
         self._queue.enqueue(event)
 

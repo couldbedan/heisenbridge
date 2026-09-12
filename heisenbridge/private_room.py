@@ -606,6 +606,11 @@ class PrivateRoom(Room):
         if event.source.nick == self.network.conn.real_nickname:
             source_irc_user_id = self.serv.irc_user_id(self.network.name, event.source.nick)
 
+            md = dict.fromkeys(mentions, True)
+            if md.get(self.user_id, False):
+                del md[self.user_id]
+            mentions = list(md)
+
             if self.lazy_members is None:
                 self.send_message(f"You said: {plain}", formatted=(f"You said: {formatted}" if formatted else None))
                 return
@@ -687,14 +692,17 @@ class PrivateRoom(Room):
         command = event.arguments[0].upper()
 
         if command == "ACTION" and len(event.arguments) > 1:
-            plain, _, _ = parse_irc_formatting(event.arguments[1])
+            plain, _, mentions = parse_irc_formatting(event.arguments[1], self.pills())
 
             if event.source.nick == self.network.conn.real_nickname:
                 self.send_emote(f"(you) {plain}")
                 return
 
             self.send_emote(
-                plain, irc_user_id, fallback_html=f"<b>Emote from {str(event.source)}</b>: {html.escape(plain)}"
+                plain,
+                irc_user_id,
+                fallback_html=f"<b>Emote from {str(event.source)}</b>: {html.escape(plain)}",
+                mentions=mentions,
             )
         else:
             plain, _, _ = parse_irc_formatting(" ".join(event.arguments))
