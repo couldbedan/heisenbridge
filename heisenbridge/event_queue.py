@@ -90,6 +90,13 @@ class EventQueue:
                 prev["content"]["body"] += "\n" + event["content"]["body"]
                 if cur_formatted:
                     prev["content"]["formatted_body"] += "<br>" + event["content"]["formatted_body"]
+
+                prev_mentions = prev["content"].get("m.mentions", {}).get("user_ids", [])
+                cur_mentions = event["content"].get("m.mentions", {}).get("user_ids", [])
+                mentions = prev_mentions + cur_mentions
+                if len(mentions) > 0:
+                    prev["content"]["m.mentions"] = {"user_ids": list(dict.fromkeys(mentions))}
+
             else:
                 # can't merge, force flush but enqueue the next event
                 self._flush()

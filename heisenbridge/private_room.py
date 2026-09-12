@@ -302,7 +302,7 @@ def parse_irc_formatting(input: str, pills=None, color=None) -> Tuple[str, Optio
     if bold:
         formatted.append("</b>")
 
-    return ("".join(plain), "".join(formatted) if have_formatting else None, mentions)
+    return ("".join(plain), "".join(formatted) if have_formatting else None, list(dict.fromkeys(mentions)))
 
 
 def split_long(nick, user, host, target, message):
