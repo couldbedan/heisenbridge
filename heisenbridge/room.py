@@ -278,7 +278,12 @@ class Room(ABC):
 
     # send message to mx user (may be puppeted)
     def send_message(
-        self, text: str, user_id: Optional[str] = None, formatted=None, fallback_html: Optional[str] = None
+        self,
+        text: str,
+        user_id: Optional[str] = None,
+        formatted=None,
+        fallback_html: Optional[str] = None,
+        mentions: Optional[List[str]] = None,
     ) -> None:
         if formatted:
             event = {
@@ -301,6 +306,11 @@ class Room(ABC):
                 },
                 "user_id": user_id,
                 "fallback_html": fallback_html,
+            }
+
+        if mentions is not None and len(mentions) > 0:
+            event["content"]["m.mentions"] = {
+                "user_ids": mentions,
             }
 
         self._queue.enqueue(event)

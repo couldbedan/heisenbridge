@@ -15,7 +15,7 @@ def test_pills():
             "{foo}": ("{foo}", "{foo}"),
         }
 
-        plain, formatted = parse_irc_formatting(input, pills)
+        plain, formatted, _ = parse_irc_formatting(input, pills)
         return formatted if formatted else plain
 
     # must always create a pill

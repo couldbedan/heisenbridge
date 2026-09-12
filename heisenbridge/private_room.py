@@ -55,9 +55,10 @@ def connected(f):
     return wrapper
 
 
-def parse_irc_formatting(input: str, pills=None, color=None) -> Tuple[str, Optional[str]]:
+def parse_irc_formatting(input: str, pills=None, color=None) -> Tuple[str, Optional[str], List[str]]:
     plain = []
     formatted = []
+    mentions = []
 
     color_table = collections.defaultdict(
         lambda: None,
@@ -273,6 +274,7 @@ def parse_irc_formatting(input: str, pills=None, color=None) -> Tuple[str, Optio
 
                     if word_start in pills:
                         mxid, displayname = pills[word_start]
+                        mentions.append(mxid)
                         words.append(
                             f'<a href="https://matrix.to/#/{escape(mxid)}">{escape(displayname)}</a>{word_end}'
                         )
@@ -300,7 +302,7 @@ def parse_irc_formatting(input: str, pills=None, color=None) -> Tuple[str, Optio
     if bold:
         formatted.append("</b>")
 
-    return ("".join(plain), "".join(formatted) if have_formatting else None)
+    return ("".join(plain), "".join(formatted) if have_formatting else None, mentions)
 
 
 def split_long(nick, user, host, target, message):
@@ -593,7 +595,7 @@ class PrivateRoom(Room):
 
         irc_user_id = self.serv.irc_user_id(self.network.name, event.source.nick)
 
-        (plain, formatted) = parse_irc_formatting(event.arguments[0], self.pills(), self.network.color)
+        plain, formatted, mentions = parse_irc_formatting(event.arguments[0], self.pills(), self.network.color)
 
         # ignore relaymsgs by us
         if event.tags:
@@ -633,6 +635,7 @@ class PrivateRoom(Room):
             irc_user_id,
             formatted=formatted,
             fallback_html=f"<b>Message from {str(event.source)}</b>: {html.escape(plain)}",
+            mentions=mentions,
         )
 
         # lazy update displayname if we detect a change
@@ -647,7 +650,7 @@ class PrivateRoom(Room):
         if self.network is None:
             return
 
-        (plain, formatted) = parse_irc_formatting(event.arguments[0])
+        plain, formatted, _ = parse_irc_formatting(event.arguments[0])
 
         if event.source.nick == self.network.conn.real_nickname:
             self.send_notice(f"You noticed: {plain}", formatted=(f"You noticed: {formatted}" if formatted else None))
@@ -684,7 +687,7 @@ class PrivateRoom(Room):
         command = event.arguments[0].upper()
 
         if command == "ACTION" and len(event.arguments) > 1:
-            (plain, formatted) = parse_irc_formatting(event.arguments[1])
+            plain, _, _ = parse_irc_formatting(event.arguments[1])
 
             if event.source.nick == self.network.conn.real_nickname:
                 self.send_emote(f"(you) {plain}")
@@ -694,14 +697,14 @@ class PrivateRoom(Room):
                 plain, irc_user_id, fallback_html=f"<b>Emote from {str(event.source)}</b>: {html.escape(plain)}"
             )
         else:
-            (plain, formatted) = parse_irc_formatting(" ".join(event.arguments))
+            plain, _, _ = parse_irc_formatting(" ".join(event.arguments))
             self.send_notice_html(f"<b>{str(event.source)}</b> requested <b>CTCP {html.escape(plain)}</b> (ignored)")
 
     def on_ctcpreply(self, conn, event) -> None:
         if self.network is None:
             return
 
-        (plain, formatted) = parse_irc_formatting(" ".join(event.arguments))
+        plain, _, _ = parse_irc_formatting(" ".join(event.arguments))
         self.send_notice_html(f"<b>{str(event.source)}</b> sent <b>CTCP REPLY {html.escape(plain)}</b> (ignored)")
 
     async def _process_event_content(self, event, prefix, reply_to=None):
