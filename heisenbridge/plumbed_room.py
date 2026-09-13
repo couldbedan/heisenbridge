@@ -190,7 +190,7 @@ class PlumbedRoom(ChannelRoom):
     def on_topic(self, conn, event) -> None:
         self.send_notice("{} changed the topic".format(event.source.nick))
         if conn.real_nickname != event.source.nick and self.topic_sync in ["matrix", "any"]:
-            (plain, formatted) = parse_irc_formatting(event.arguments[0])
+            plain, _, _ = parse_irc_formatting(event.arguments[0])
             super().set_topic(plain)
 
     @connected

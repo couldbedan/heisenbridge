@@ -1660,7 +1660,7 @@ class NetworkRoom(Room):
     def on_privnotice(self, conn, event) -> None:
         # show unhandled notices in server room
         source = self.source_text(conn, event)
-        plain, formatted = parse_irc_formatting(event.arguments[0])
+        plain, formatted, _ = parse_irc_formatting(event.arguments[0])
         self.send_notice_html(f"Notice from <b>{source}:</b> {formatted if formatted else html.escape(plain)}")
 
     @ircroom_event()
@@ -1901,7 +1901,7 @@ class NetworkRoom(Room):
         )
 
     def on_wallops(self, conn, event) -> None:
-        plain, formatted = parse_irc_formatting(event.target)
+        plain, formatted, _ = parse_irc_formatting(event.target)
         self.send_notice_html(f"<b>WALLOPS {event.source.nick}</b>: {formatted if formatted else html.escape(plain)}")
 
     def on_chghost(self, conn, event) -> None:

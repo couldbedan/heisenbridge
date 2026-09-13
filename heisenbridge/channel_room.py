@@ -543,18 +543,18 @@ class ChannelRoom(PrivateRoom):
         self.set_topic("")
 
     def on_currenttopic(self, conn, event) -> None:
-        (plain, formatted) = parse_irc_formatting(event.arguments[1])
+        plain, _, _ = parse_irc_formatting(event.arguments[1])
         self.send_notice(f"Topic is '{plain}'")
         self.set_topic(plain)
 
     def on_topicinfo(self, conn, event) -> None:
         settime = unix_to_local(event.arguments[2]) if len(event.arguments) > 2 else "?"
-        (plain, formatted) = parse_irc_formatting(event.arguments[1])
+        plain, _, _ = parse_irc_formatting(event.arguments[1])
         self.send_notice(f"Topic set by {plain} at {settime}")
 
     def on_topic(self, conn, event) -> None:
         self.send_notice("{} changed the topic".format(event.source.nick))
-        (plain, formatted) = parse_irc_formatting(event.arguments[0])
+        plain, _, _ = parse_irc_formatting(event.arguments[0])
         self.set_topic(plain)
 
     def on_kick(self, conn, event) -> None:
@@ -610,5 +610,5 @@ class ChannelRoom(PrivateRoom):
         self.send_notice(f"Channel was created at {created}")
 
     def on_328(self, conn, event) -> None:
-        (plain, formatted) = parse_irc_formatting(event.arguments[1])
+        plain, _, _ = parse_irc_formatting(event.arguments[1])
         self.send_notice(f"URL for {event.arguments[0]}: {plain}")
