@@ -30,7 +30,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: hif1/heisenbridge
+          images: ${{ vars.DOCKER_IMAGE || github.repository }}
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -53,7 +53,7 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            hif1/heisenbridge:latest
+            ${{ vars.DOCKER_IMAGE || github.repository }}:latest
             ${{ steps.meta.outputs.tags }}
 
       - name: Image digest
