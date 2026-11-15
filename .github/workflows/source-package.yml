@@ -38,7 +38,7 @@ jobs:
           path: "dist/heisenbridge-${{ steps.get_tag.outputs.value }}.tar.gz"
 
       - name: Upload tagged release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: "v${{ steps.get_tag.outputs.value }}"
           files: |
