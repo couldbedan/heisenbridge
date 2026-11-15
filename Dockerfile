@@ -1,4 +1,4 @@
-FROM docker.io/alpine:3.20
+FROM docker.io/alpine:3.24
 
 # install runtime dependencies
 RUN apk add --no-cache python3 py3-ruamel.yaml.clib
